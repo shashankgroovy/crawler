@@ -139,7 +139,7 @@ if __name__ == '__main__':
         parser.add_argument("-d", "--depth", type=int, default=10,
                             help="set the max_depth for crawling")
         parser.add_argument('-v', '--verbose', action="store_true",
-                           help="Toggle verbose off (default is on)")
+                           help="Toggle verbose on (default is off)")
 
         args = parser.parse_args()
 
