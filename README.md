@@ -1,6 +1,6 @@
 # Crawler
 [![license](https://img.shields.io/github/license/mashape/apistatus.svg?maxAge=2592000)](http://mit-license.org/)
-![python](https://img.shields.io/badge/python-2.7-blue.svg)
+![python](https://img.shields.io/badge/python-2.7-green.svg)
 
 A basic implementation of a web crawler written in python.
  

@@ -1,13 +1,30 @@
+import signal
 import sys
 import urlparse
-
+import argparse
 import requests
+
 from bs4 import BeautifulSoup
 from collections import deque
 
 
 URLS = set()                # Unique set of all urls collected
-VISITED_LINKS = set()       # Crawl a url only once
+VISITED_LINKS = set()       # For crawling a url only once
+VERBOSE = False
+
+def signal_handler(signal, frame):
+    """exit gracefully on keybord interrupt"""
+    print "\n\n[Stopped]"
+    print "Found: %d links \n" % len(URLS)
+
+    for link in URLS:
+        print link
+    sys.exit(0)
+
+def logg(msg):
+    """ print to screen based on VERBOSE toggling """
+    if VERBOSE: print msg
+
 
 def crawl(url, max_depth=10):
     """The main crawler function.
@@ -15,7 +32,6 @@ def crawl(url, max_depth=10):
     Takes a url and max_depth as input parameters and returns a list of crawled
     urls. Urls beyond max_depth are not crawled, (default: 10).
     """
-
     host = get_host_name(url)   # For crawling same host urls
     depth = 0                   # Set the root depth to 0
 
@@ -23,6 +39,7 @@ def crawl(url, max_depth=10):
     dq = deque()
     dq.append((url, depth))
     print 'Fetching urls...'
+    print 'Press [Ctrl-C] to stop crawling anytime'
 
     while len(dq) != 0:
         # pop the the first url and crawl
@@ -30,8 +47,7 @@ def crawl(url, max_depth=10):
         if depth > max_depth:
             continue
 
-        #print 'visited links', VISITED_LINKS
-
+        logg('Crawling %s' % current_url)
         #print 'phew', current_url, check_if_not_visited(current_url),
         #check_if_same_host(host, current_url)
 
@@ -45,7 +61,7 @@ def crawl(url, max_depth=10):
                     if link not in URLS:
                         # increase the depth of the link since it is found on an
                         # internal page
-                        # print 'Adding %s' % link
+                        logg('Adding %s' % link)
                         dq.append((link, depth+1))
                         URLS.add(link)
 
@@ -53,8 +69,6 @@ def crawl(url, max_depth=10):
                 pass
         else:
             continue
-    return URLS
-
 
 def fetch_all_links(url):
     """This function creates a request object and fetches the successive url"""
@@ -64,7 +78,7 @@ def fetch_all_links(url):
         r = requests.get(url)
         if r.status_code == 200:
 
-            #print "Fetching url..."
+            logg('Fetching in page links...')
             #print r.status_code
             content = r.content
             soup = BeautifulSoup(content, "lxml")
@@ -87,7 +101,7 @@ def fetch_all_links(url):
         else:
             print "Make sure you have everything correct."
 
-    except requests.exceptions.ConnectionError:
+    except requests.exceptions.ConnectionError, e:
         print "Oops! Connection Error. Try again"
 
 def check_if_same_host(host, url):
@@ -112,9 +126,40 @@ def make_clean_url(url):
 
 
 if __name__ == '__main__':
-    url = sys.argv[1]
+    try:
+        # handle SIGINT
+        signal.signal(signal.SIGINT, signal_handler)
 
-    links = crawl(url)
-    print "Found: %d links \n" % len(links)
-    for link in links:
-        print link
+        parser = argparse.ArgumentParser(
+            prog="crawler",
+            description="A basic implementation of a web crawler written in python.",
+            epilog="For more information see http://github.com/shashankgroovy/crawler")
+
+        parser.add_argument("url", help="the url to crawl")
+        parser.add_argument("-d", "--depth", type=int, default=10,
+                            help="set the max_depth for crawling")
+        parser.add_argument('-v', '--verbose', action="store_true",
+                           help="Toggle verbose off (default is on)")
+
+        args = parser.parse_args()
+
+        VERBOSE = args.verbose
+        url = args.url
+
+        if args.depth:
+            depth = args.depth
+        else:
+            depth = 10
+
+        if len(sys.argv) == 1:
+            parser.print_help()
+
+        crawl(url, depth)
+
+        print "\n----------------------------------------"
+        print "Found: %d links \n" % len(URLS)
+        for link in URLS:
+            print link
+
+    except KeyboardInterrupt:
+        pass
