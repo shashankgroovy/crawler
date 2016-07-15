@@ -115,6 +115,6 @@ if __name__ == '__main__':
     url = sys.argv[1]
 
     links = crawl(url)
-    print "\nFound %d links \n" % len(links)
+    print "Found: %d links \n" % len(links)
     for link in links:
         print link
